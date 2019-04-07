@@ -5,6 +5,7 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable import/no-unresolved */
 const main = () => {
+
   Storage.prototype.setObject = function setObject(key, value) {
     this.setItem(key, JSON.stringify(value));
   };
@@ -821,6 +822,7 @@ const main = () => {
           }, 0);
         }
         $scope.enableGlobalShortCut = localStorage.getObject('enable_global_shortcut');
+        $scope.enableStartupOnLogin = localStorage.getObject('enable_startup_on_login');
         $scope.applyGlobalShortcut();
       };
 
@@ -1191,6 +1193,30 @@ const main = () => {
         ipcRenderer.send('control', message);
       };
 
+      // 开启启动
+      $scope.applyStartupOnLogin = (toggle) => {
+
+        if (typeof chrome !== 'undefined') {
+          return;
+        }
+
+        let message = '';
+
+        $scope.enableStartupOnLogin = !$scope.enableStartupOnLogin;
+
+        if ($scope.enableStartupOnLogin === true) {
+          message = 'enable_startup_on_login';
+        } else {
+          message = 'disable_startup_on_login';
+        }
+
+        // check if globalShortcuts is allowed
+        localStorage.setObject('enable_startup_on_login', $scope.enableStartupOnLogin);
+
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('control', message);
+      }
+
       if (typeof chrome === 'undefined') {
         require('electron').ipcRenderer.on('globalShortcut', (event, message) => {
           if (message === 'right') {
@@ -1198,9 +1224,17 @@ const main = () => {
           } else if (message === 'left') {
             angularPlayer.prevTrack();
           } else if (message === 'pause'){
-            angularPlayer.pause();
+            if(angularPlayer.isPlayingStatus()){
+              angularPlayer.pause();
+            }else{
+              angularPlayer.play();
+            }
           } else if (message === 'play'){
-            angularPlayer.play();
+            if(!angularPlayer.isPlayingStatus()){
+              angularPlayer.play();
+            }else{
+              angularPlayer.pause();
+            }
           }
         });
       }
